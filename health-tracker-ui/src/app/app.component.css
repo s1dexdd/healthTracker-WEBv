@@ -1,0 +1,66 @@
+:root {
+  --primary: #6366f1;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --danger: #ef4444;
+  --border-color: #e2e8f0;
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --protein: #3b82f6;
+  --fats: #eab308;
+  --carbs: #ec4899;
+}
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { margin: 0; background-color: var(--bg-color); color: var(--text-main); }
+.container { max-width: 500px; margin: 40px auto; padding: 0 20px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+header h1 span { background: linear-gradient(to right, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
+.card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: var(--shadow); margin-bottom: 20px; padding: 20px; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+input, select { width: 100%; padding: 12px; background: #f1f5f9; border: 2px solid transparent; border-radius: 10px; font-size: 1rem; color: var(--text-main); }
+input:focus { background: #fff; border-color: var(--primary); outline: none; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-save { display: block; width: 100%; padding: 16px; background-color: #6366f1 !important; color: #ffffff !important; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); margin-top: 10px; }
+.btn-logout { padding: 8px 16px; background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn-delete-small { background: #fee2e2; color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.tab-navigation { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 24px; }
+.tab-navigation button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+.tab-navigation button.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.progress-container {
+  background: #e2e8f0;
+  border-radius: 10px;
+  height: 10px;
+  width: 100%;
+  margin: 10px 0;
+  overflow: hidden;
+  position: relative;
+  display: block; 
+}
+.main-progress { height: 16px; margin-top: 20px; background: rgba(255,255,255,0.2); }
+.progress-bar {
+  height: 100%;
+  transition: width 0.5s ease-in-out;
+  display: block;
+  min-width: 0;
+}
+.bg-calories { background-color: #4ade80 !important; }
+.bg-protein { background-color: #3b82f6 !important; }
+.bg-fats { background-color: #eab308 !important; }
+.bg-carbs { background-color: #ec4899 !important; }
+.over-limit { background: #f87171 !important; }
+.summary-card { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; }
+.kcal-grid { display: flex; justify-content: space-around; align-items: center; text-align: center; }
+.kcal-item .label { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; }
+.kcal-item strong { font-size: 1.4rem; display: block; }
+.kcal-item.highlight strong { font-size: 2.2rem; }
+.macro-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 15px; }
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+.item-kcal.burned { color: #ef4444; }
+.calc-preview { background: #f0fdf4; color: #166534; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px; font-size: 0.9rem; border: 1px dashed #22c55e; }
+.goal-desc-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-main); font-weight: 500; }
+.auth-toggle { background: none; border: none; color: var(--primary); width: 100%; margin-top: 15px; font-weight: 600; cursor: pointer; }
+.error-banner { background: #fef2f2; color: var(--danger); padding: 12px; border-radius: 10px; border: 1px solid #fee2e2; margin-bottom: 15px; text-align: center; }
+.content-fade { animation: slideUp 0.4s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
