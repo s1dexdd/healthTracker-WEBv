@@ -25,7 +25,7 @@ public class ReportDAO {
     int bmr = bmrdao.calculateBMR(userId);
     User user = userDAO.selectUser(userId);
     return (int) (bmr * user.getActivityLevel().getCoefficient());
-    }
+    }   
 
     public int calculateDailyWorkoutExpenditure(int userId, Date date) {
         return workoutLogDAO.getDailyTotalBurned(userId, date);

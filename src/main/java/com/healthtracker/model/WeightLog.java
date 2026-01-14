@@ -16,6 +16,9 @@ public class WeightLog implements Serializable {
         this.logDate = logDate;
         this.currentWeightKg = currentWeightKg;
     }
+    public WeightLog() {
+    
+    }
     public WeightLog(int userId,Date logDate, BigDecimal currentWeightKg){
         this(-1, userId, logDate, currentWeightKg);
     }

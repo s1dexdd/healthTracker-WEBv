@@ -9,36 +9,30 @@ import java.util.Date;
 
 public class WorkoutLogDAO {
 
-
     private static final String INSERT_LOG_SQL =
             "INSERT INTO \"WORKOUT_LOG\" (user_id, log_date, type, duration_minutes, calories_burned, calories_burned_per_minute)" +
                     "VALUES(?, ?, ?, ?, ?, ?)";
 
-
     private static final String SELECT_LOGS_BY_DATE =
             "SELECT workout_id, user_id, log_date, type, duration_minutes, calories_burned, calories_burned_per_minute FROM \"WORKOUT_LOG\" WHERE user_id = ? AND CAST(log_date AS DATE) = CAST(? AS DATE) ORDER BY log_date ASC";
-
 
     private static final String SELECT_BURNED_CALORIES_BY_DATE =
             "SELECT SUM(calories_burned) AS total_burned FROM \"WORKOUT_LOG\" WHERE user_id = ? AND CAST(log_date AS DATE) = CAST(? AS DATE)";
 
+    private static final String DELETE_LOG_SQL =
+            "DELETE FROM \"WORKOUT_LOG\" WHERE workout_id = ?";
 
     public void insertWorkoutLog(WorkoutLog log){
-
         int totalBurned = log.calculateTotalBurned();
-
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(INSERT_LOG_SQL)) {
-
             preparedStatement.setInt(1, log.getUserId());
             preparedStatement.setTimestamp(2, log.getLogDate());
             preparedStatement.setString(3, log.getType());
             preparedStatement.setInt(4, log.getDurationMinutes());
             preparedStatement.setInt(5, totalBurned);
             preparedStatement.setInt(6, log.getCaloriesBurnedPerMinute());
-
             preparedStatement.executeUpdate();
-
         } catch (SQLException e) {
             System.err.println("ошибка при вставке записи о тренировке: " + e.getMessage());
             e.printStackTrace();
@@ -49,10 +43,8 @@ public class WorkoutLogDAO {
         int totalBurned = 0;
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(SELECT_BURNED_CALORIES_BY_DATE)) {
-
             preparedStatement.setInt(1, userId);
             preparedStatement.setDate(2, new java.sql.Date(date.getTime()));
-
             try (ResultSet rs = preparedStatement.executeQuery()) {
                 if (rs.next()) {
                     totalBurned = rs.getInt("total_burned");
@@ -67,16 +59,12 @@ public class WorkoutLogDAO {
 
     public List<WorkoutLog> getWorkoutLogsByDate(int userId, Date date){
         List<WorkoutLog> logs = new ArrayList<>();
-
         try(Connection connection = DBConfig.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(SELECT_LOGS_BY_DATE)){
-
             preparedStatement.setInt(1, userId);
             preparedStatement.setDate(2, new java.sql.Date(date.getTime()));
-
             try(ResultSet rs = preparedStatement.executeQuery()) {
                 while (rs.next()){
-
                     WorkoutLog log = new WorkoutLog(
                             rs.getInt("workout_id"),
                             rs.getInt("user_id"),
@@ -94,5 +82,18 @@ public class WorkoutLogDAO {
             e.printStackTrace();
         }
         return logs;
+    }
+
+    public boolean deleteWorkoutLog(int logId) {
+        try (Connection connection = DBConfig.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_LOG_SQL)) {
+            preparedStatement.setInt(1, logId);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            System.err.println("Ошибка при удалении тренировки с ID " + logId + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

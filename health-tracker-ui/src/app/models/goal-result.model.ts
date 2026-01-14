@@ -9,4 +9,5 @@ export interface GoalResult {
   currentProteinGrams?: number;
   currentFatsGrams?: number;
   currentCarbsGrams?: number;
+  currentWeightKg?: number; 
 }

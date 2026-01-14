@@ -1,232 +1,265 @@
 <div class="container">
-  <div *ngIf="currentStep === 'auth'" class="auth-wrapper content-fade">
-    <section class="card">
-      <div class="card-header">
-        <h2 style="text-align: center;">{{ isLoginMode ? 'Вход в систему' : 'Регистрация' }}</h2>
-      </div>
-      <div class="card-body">
-        <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
-        <div class="input-group">
-          <label>Email</label>
-          <input type="email" [(ngModel)]="user.email" placeholder="mail@example.com">
-        </div>
-        <div class="input-group">
-          <label>Пароль</label>
-          <input type="password" [(ngModel)]="user.password">
-        </div>
-        <button class="btn-save" (click)="handleAuth()">
-          {{ isLoginMode ? 'Войти' : 'Продолжить' }}
+  <div *ngIf="currentStep === 'auth'">
+    <div class="header-brand"><h1><span>Health Tracker</span></h1></div>
+    <mat-card class="card auth-card">
+      <div style="padding: 30px;" [formGroup]="authForm">
+        <h2 style="text-align: center; font-weight: 700;">{{ isLoginMode ? 'Вход' : 'Регистрация' }}</h2>
+        <div *ngIf="errorMessage" class="error-banner">{{errorMessage}}</div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Пароль</mat-label>
+          <input matInput type="password" formControlName="password">
+        </mat-form-field>
+        <button mat-flat-button color="primary" class="full-width action-btn" (click)="handleAuth()">
+          {{ isLoginMode ? 'Войти' : 'Создать аккаунт' }}
         </button>
-        <button class="auth-toggle" (click)="isLoginMode = !isLoginMode; errorMessage = null">
-          {{ isLoginMode ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти' }}
+        <button mat-button class="full-width" (click)="isLoginMode = !isLoginMode">
+          {{ isLoginMode ? 'Нет аккаунта? Регистрация' : 'Уже есть аккаунт? Войти' }}
         </button>
       </div>
-    </section>
+    </mat-card>
   </div>
 
-  <div *ngIf="currentStep === 'setup'" class="setup-wrapper content-fade">
-    <section class="card">
-      <div class="card-header"><h2>Настройка профиля</h2></div>
-      <div class="card-body">
-        <div class="input-group"><label>Ваше имя</label><input [(ngModel)]="user.name"></div>
-        <div class="row">
-          <div class="input-group"><label>Рост (см)</label><input type="number" [(ngModel)]="user.heightCm"></div>
-          <div class="input-group"><label>Возраст</label><input type="number" [(ngModel)]="user.age"></div>
-        </div>
-        <div class="row">
-          <div class="input-group"><label>Текущий вес (кг)</label><input type="number" [(ngModel)]="user.startWeightKg" (ngModelChange)="updateAvailableGoals()"></div>
-          <div class="input-group"><label>Целевой вес (кг)</label><input type="number" [(ngModel)]="user.targetWeightKg" (ngModelChange)="updateAvailableGoals()"></div>
-        </div>
-        <div class="input-group">
-          <label>Активность</label>
-          <select [(ngModel)]="user.activityLevel">
-            <option value="SIT">Сидячий (x1.2)</option>
-            <option value="LIGHT">Легкий (x1.375)</option>
-            <option value="MID">Средний (x1.55)</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>Темп цели (в неделю)</label>
-          <select [(ngModel)]="user.weeklyGoalKg">
-            <option *ngFor="let g of availableGoals" [ngValue]="g.value">{{ g.label }}</option>
-          </select>
-        </div>
-        <button class="btn-save" (click)="saveProfileData()">Начать пользоваться</button>
+  <div *ngIf="currentStep === 'main' || currentStep === 'setup'">
+    <header class="app-header">
+      <div class="user-info">
+        <span class="welcome">Привет,</span>
+        <span class="user-name">{{ user?.name || 'Пользователь' }}</span>
       </div>
-    </section>
-  </div>
-
-  <div *ngIf="currentStep === 'main'" class="content-fade">
-    <header>
-      <h1>Health <span>Tracker</span></h1>
-      <button class="btn-logout" (click)="logout()">Выйти</button>
+      <button mat-icon-button (click)="logout()"><mat-icon>logout</mat-icon></button>
     </header>
 
-    <nav class="tab-navigation">
-      <button (click)="activeTab = 'diary'" [class.active]="activeTab === 'diary'">🍎 Еда</button>
-      <button (click)="activeTab = 'workout'" [class.active]="activeTab === 'workout'">💪 Зал</button>
-      <button (click)="activeTab = 'stats'" [class.active]="activeTab === 'stats'">📈 Статистика</button>
-      <button (click)="activeTab = 'profile'" [class.active]="activeTab === 'profile'">👤 Профиль</button>
-    </nav>
+    <mat-tab-group [(selectedIndex)]="activeTab" class="custom-tabs">
+      <mat-tab label="Обзор">
+        <div class="tab-padding" *ngIf="goal">
+          <mat-card class="card date-selector-card">
+            <div class="date-picker-container">
+              <mat-icon>calendar_today</mat-icon>
+              <input type="date" [(ngModel)]="selectedDate" (change)="loadDashboard()" class="date-input">
+            </div>
+          </mat-card>
 
-    <div *ngIf="activeTab === 'diary' || activeTab === 'workout'" class="date-selector card" style="padding: 12px; margin-bottom: 20px;">
-      <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()">
-    </div>
+          <div class="main-stats-card">
+            <div class="kcal-left">
+              <span class="label">Осталось на {{ selectedDate | date:'dd.MM' }}</span>
+              <span class="value">{{ remainingKcal | number:'1.0-0' }}</span>
+            </div>
+            <div class="stats-line">
+              <div class="stat">
+                <span class="n">{{ goal.targetIntakeKcal | number:'1.0-0' }}</span>
+                <span class="l">Цель</span>
+              </div>
+              <div class="stat">
+                <span class="n">{{ goal.currentIntakeKcal | number:'1.0-0' }}</span>
+                <span class="l">Еда</span>
+              </div>
+              <div class="stat">
+                <span class="n">{{ goal.currentBurnedKcal | number:'1.0-0' }}</span>
+                <span class="l">активность</span>
+              </div>
+            </div>
+          </div>
 
-    <div *ngIf="activeTab === 'diary'" class="content-fade">
-      <section class="card">
-        <div class="card-header"><h3>Добавить прием пищи</h3></div>
-        <div class="card-body">
-          <div class="input-group"><input [(ngModel)]="foodInput.description" placeholder="Название продукта"></div>
-          <div class="row">
-            <div class="input-group"><label>Ккал / 100г</label><input type="number" [(ngModel)]="foodInput.caloriesPer100g"></div>
-            <div class="input-group"><label>Вес (г)</label><input type="number" [(ngModel)]="foodInput.portionSizeGrams"></div>
-          </div>
-          <div class="row">
-            <div class="input-group"><label>Белки</label><input type="number" [(ngModel)]="foodInput.proteinPer100g"></div>
-            <div class="input-group"><label>Жиры</label><input type="number" [(ngModel)]="foodInput.fatsPer100g"></div>
-            <div class="input-group"><label>Угл.</label><input type="number" [(ngModel)]="foodInput.carbsPer100g"></div>
-          </div>
-          <button class="btn-save" (click)="addFood()">Записать в дневник</button>
-        </div>
-      </section>
+          <mat-card class="card weight-log-card">
+            <div class="weight-header">
+              <mat-icon color="primary">monitor_weight</mat-icon>
+              <h3>Текущий вес</h3>
+              <span class="current-val">{{ goal.currentWeightKg }} кг</span>
+            </div>
+            <div class="weight-input-group">
+              <input type="number" [(ngModel)]="newWeightLog" placeholder="Введите вес...">
+              <button (click)="updateWeight()">Записать</button>
+            </div>
+          </mat-card>
 
-      <section class="card" *ngIf="dailyFoodLogs.length > 0">
-        <div class="card-header"><h3>История за сегодня</h3></div>
-        <div class="history-list">
-          <div class="history-item" *ngFor="let item of dailyFoodLogs">
-            <div class="item-info">
-              <span class="item-name">{{ item.description }}</span>
-              <span class="item-meta">{{ item.portionSizeGrams }}г</span>
+          <div class="card macro-card">
+            <h3>Макронутриенты за день</h3>
+            <div class="macro-item">
+              <div class="macro-info">
+                <span class="m-name">🥩 Белки</span>
+                <span class="m-val">{{ goal.currentProteinGrams | number:'1.0-1' }} / {{ goal.proteinGrams }}г</span>
+              </div>
+              <mat-progress-bar mode="determinate" [value]="proteinPercent" class="p-bar p-protein"></mat-progress-bar>
             </div>
-            <div class="item-actions">
-              <span class="item-kcal"><strong>{{ item.calories }}</strong> ккал</span>
-              <button class="btn-delete-small" (click)="deleteFoodLog(item.foodId)">✕</button>
+            <div class="macro-item">
+              <div class="macro-info">
+                <span class="m-name">🥑 Жиры</span>
+                <span class="m-val">{{ goal.currentFatsGrams | number:'1.0-1' }} / {{ goal.fatsGrams }}г</span>
+              </div>
+              <mat-progress-bar mode="determinate" [value]="fatsPercent" class="p-bar p-fats"></mat-progress-bar>
+            </div>
+            <div class="macro-item">
+              <div class="macro-info">
+                <span class="m-name">🍞 Углеводы</span>
+                <span class="m-val">{{ goal.currentCarbsGrams | number:'1.0-1' }} / {{ goal.carbsGrams }}г</span>
+              </div>
+              <mat-progress-bar mode="determinate" [value]="carbsPercent" class="p-bar p-carbs"></mat-progress-bar>
             </div>
           </div>
         </div>
-      </section>
-    </div>
+      </mat-tab>
 
-    <div *ngIf="activeTab === 'workout'" class="content-fade">
-      <section class="card">
-        <div class="card-header"><h3>Добавить тренировку</h3></div>
-        <div class="card-body">
-          <div class="input-group"><label>Вид активности</label><input [(ngModel)]="workoutInput.type" placeholder="Напр. Бег"></div>
-          <div class="row">
-            <div class="input-group"><label>Время (мин)</label><input type="number" [(ngModel)]="workoutInput.durationMinutes"></div>
-            <div class="input-group"><label>Ккал / мин</label><input type="number" [(ngModel)]="workoutInput.caloriesBurnedPerMinute"></div>
-          </div>
-          <div class="calc-preview" *ngIf="workoutInput.durationMinutes > 0 && workoutInput.caloriesBurnedPerMinute > 0">
-            Будет сожжено: <strong>{{ workoutInput.durationMinutes * workoutInput.caloriesBurnedPerMinute }}</strong> ккал
-          </div>
-          <button class="btn-save" (click)="addWorkout()">Добавить активность</button>
-        </div>
-      </section>
-      
-      <section class="card" *ngIf="dailyWorkoutLogs.length > 0">
-        <div class="card-header"><h3>Активность за день</h3></div>
-        <div class="history-list">
-          <div class="history-item" *ngFor="let w of dailyWorkoutLogs">
-            <div class="item-info">
-              <span class="item-name">{{ w.type }}</span>
-              <span class="item-meta">{{ w.durationMinutes }} мин</span>
+      <mat-tab label="Питание">
+        <div class="tab-padding">
+          <mat-card class="card date-selector-card">
+            <div class="date-picker-container">
+              <mat-icon>calendar_today</mat-icon>
+              <input type="date" [(ngModel)]="selectedDate" (change)="loadDashboard()" class="date-input">
             </div>
-            <div class="item-actions">
-              <span class="item-kcal burned"><strong>-{{ w.caloriesBurned }}</strong> ккал</span>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+          </mat-card>
 
-    <div *ngIf="activeTab === 'stats'" class="content-fade">
-      <section class="card summary-card" *ngIf="goal">
-        <div class="kcal-grid">
-          <div class="kcal-item"><span class="label">ЦЕЛЬ</span><strong>{{ goal.targetIntakeKcal }}</strong></div>
-          <div class="operator">-</div>
-          <div class="kcal-item"><span class="label">ЕДА</span><strong>{{ goal.currentIntakeKcal }}</strong></div>
-          <div class="operator">+</div>
-          <div class="kcal-item"><span class="label">УПР.</span><strong>{{ goal.currentBurnedKcal }}</strong></div>
-          <div class="operator">=</div>
-          <div class="kcal-item highlight">
-            <strong>{{ remainingKcal }}</strong>
-            <span class="label">ОСТАТОК</span>
-          </div>
-        </div>
-        <div class="progress-container main-progress">
-          <div class="progress-bar bg-calories" 
-               [style.width.%]="kcalPercent" 
-               [class.over-limit]="remainingKcal < 0">
-          </div>
-        </div>
-      </section>
+          <mat-card class="card">
+            <h3>Добавить продукт</h3>
+            <div [formGroup]="foodForm">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Название (например, Куриная грудка)</mat-label>
+                <input matInput formControlName="description">
+              </mat-form-field>
+              
+              <div class="setup-grid">
+                <mat-form-field appearance="outline"><mat-label>Ккал / 100г</mat-label><input matInput type="number" formControlName="caloriesPer100g"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Вес порции (г)</mat-label><input matInput type="number" formControlName="portionSizeGrams"></mat-form-field>
+              </div>
 
-      <section class="card" *ngIf="goal">
-        <div class="card-header"><h3>Распределение БЖУ</h3></div>
-        <div class="card-body">
-          <div class="macro-item">
-            <div class="macro-header">
-              <span>🥩 Белки</span>
-              <span>{{ goal.currentProteinGrams }}г / {{ goal.proteinGrams }}г</span>
-            </div>
-            <div class="progress-container">
-              <div class="progress-bar bg-protein" [style.width.%]="proteinPercent"></div>
-            </div>
-          </div>
-          <div class="macro-item">
-            <div class="macro-header">
-              <span>🥑 Жиры</span>
-              <span>{{ goal.currentFatsGrams }}г / {{ goal.fatsGrams }}г</span>
-            </div>
-            <div class="progress-container">
-              <div class="progress-bar bg-fats" [style.width.%]="fatsPercent"></div>
-            </div>
-          </div>
-          <div class="macro-item">
-            <div class="macro-header">
-              <span>🍞 Углеводы</span>
-              <span>{{ goal.currentCarbsGrams }}г / {{ goal.carbsGrams }}г</span>
-            </div>
-            <div class="progress-container">
-              <div class="progress-bar bg-carbs" [style.width.%]="carbsPercent"></div>
-            </div>
-          </div>
-        </div>
-        <div class="goal-desc-footer">{{ goal.goalDescription }}</div>
-      </section>
-    </div>
+              <div class="macro-inputs-grid">
+                <mat-form-field appearance="outline"><mat-label>Белки/100г</mat-label><input matInput type="number" formControlName="proteinPer100g"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Жиры/100г</mat-label><input matInput type="number" formControlName="fatsPer100g"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Угл/100г</mat-label><input matInput type="number" formControlName="carbsPer100g"></mat-form-field>
+              </div>
 
-    <div *ngIf="activeTab === 'profile'" class="content-fade">
-      <section class="card">
-        <div class="card-header"><h3>Мой профиль</h3></div>
-        <div class="card-body">
-          <div class="input-group"><label>Имя</label><input [(ngModel)]="user.name"></div>
-          <div class="row">
-            <div class="input-group"><label>Рост (см)</label><input type="number" [(ngModel)]="user.heightCm"></div>
-            <div class="input-group"><label>Возраст</label><input type="number" [(ngModel)]="user.age"></div>
-          </div>
-          <div class="row">
-            <div class="input-group"><label>Текущий вес (кг)</label><input type="number" [(ngModel)]="user.startWeightKg" (ngModelChange)="updateAvailableGoals()"></div>
-            <div class="input-group"><label>Целевой вес (кг)</label><input type="number" [(ngModel)]="user.targetWeightKg" (ngModelChange)="updateAvailableGoals()"></div>
-          </div>
-          <div class="input-group">
-            <label>Активность</label>
-            <select [(ngModel)]="user.activityLevel">
-              <option value="SIT">Сидячий (x1.2)</option>
-              <option value="LIGHT">Легкий (x1.375)</option>
-              <option value="MID">Средний (x1.55)</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label>Темп цели (в неделю)</label>
-            <select [(ngModel)]="user.weeklyGoalKg">
-              <option *ngFor="let g of availableGoals" [ngValue]="g.value">{{ g.label }}</option>
-            </select>
-          </div>
-          <button class="btn-save" (click)="saveProfileData()">Сохранить изменения</button>
+              <button mat-flat-button color="primary" class="full-width action-btn" (click)="addFood()">Добавить в историю</button>
+            </div>
+          </mat-card>
+
+          <mat-card class="card">
+            <h3>История за {{ selectedDate | date:'dd.MM' }}</h3>
+            <div *ngIf="dailyFoodLogs.length === 0" class="empty-state">История пуста</div>
+            <div *ngFor="let f of dailyFoodLogs" class="history-item">
+              <div class="item-info">
+                <span class="item-title">{{ f.description }}</span>
+                <span class="item-sub">{{ f.portionSizeGrams }}г • Б:{{f.protein || 0}} Ж:{{f.fats || 0}} У:{{f.carbs || 0}}</span>
+              </div>
+              <div class="item-right">
+                <span class="kcal-add">+{{ f.calories | number:'1.0-0' }}</span>
+                <button mat-icon-button color="warn" (click)="deleteFoodLog(f.foodId || f.id)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </mat-card>
         </div>
-      </section>
-    </div>
+      </mat-tab>
+
+      <mat-tab label="активности">
+        <div class="tab-padding">
+          <mat-card class="card date-selector-card">
+            <div class="date-picker-container">
+              <mat-icon>calendar_today</mat-icon>
+              <input type="date" [(ngModel)]="selectedDate" (change)="loadDashboard()" class="date-input">
+            </div>
+          </mat-card>
+
+          <mat-card class="card">
+            <h3>Записать активность</h3>
+            <div [formGroup]="workoutForm">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Тип тренировки</mat-label>
+                <input matInput formControlName="type">
+              </mat-form-field>
+              <div class="setup-grid">
+                <mat-form-field appearance="outline"><mat-label>Мин.</mat-label><input matInput type="number" formControlName="durationMinutes"></mat-form-field>
+                <mat-form-field appearance="outline"><mat-label>Ккал/мин</mat-label><input matInput type="number" formControlName="caloriesBurnedPerMinute"></mat-form-field>
+              </div>
+              <button mat-flat-button color="accent" class="full-width action-btn" (click)="addWorkout()">Записать</button>
+            </div>
+          </mat-card>
+
+          <mat-card class="card">
+            <h3>Активность {{ selectedDate | date:'dd.MM' }}</h3>
+            <div *ngFor="let w of dailyWorkoutLogs" class="history-item">
+              <div><span class="item-title">{{ w.type }}</span>-<span class="item-sub">{{  w.durationMinutes }}  мин</span></div>
+              <div class="item-right">
+                <span class="kcal-burn">-{{ w.caloriesBurned | number:'1.0-0' }}</span>
+                <button mat-icon-button color="warn" (click)="deleteWorkoutLog(w.workoutId)"><mat-icon>delete_outline</mat-icon></button>
+              </div>
+            </div>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Профиль">
+        <div class="tab-padding">
+          <mat-card class="card profile-card">
+            <div class="profile-avatar-section">
+              <div class="avatar-circle"><mat-icon>person</mat-icon></div>
+              <h2>{{ user?.name }}</h2>
+            </div>
+
+            <div [formGroup]="setupForm" class="profile-grid-form">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Имя</mat-label>
+                <input matInput formControlName="name">
+              </mat-form-field>
+
+              <div class="setup-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Возраст</mat-label>
+                  <input matInput type="number" formControlName="age">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Пол</mat-label>
+                  <mat-select formControlName="gender">
+                    <mat-option value="MALE">Мужской</mat-option>
+                    <mat-option value="FEMALE">Женский</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="setup-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Рост (см)</mat-label>
+                  <input matInput type="number" formControlName="heightCm">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Активность</mat-label>
+                  <mat-select formControlName="activityLevel">
+                    <mat-option value="SIT">Сидячая (SIT)</mat-option>
+                    <mat-option value="LIGHT">Легкая (LIGHT)</mat-option>
+                    <mat-option value="MID">Средняя (MID)</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="setup-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Начальный вес (кг)</mat-label>
+                  <input matInput type="number" formControlName="startWeightKg">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Целевой вес (кг)</mat-label>
+                  <input matInput type="number" formControlName="targetWeightKg">
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Цель в неделю (кг)</mat-label>
+                <mat-select formControlName="weeklyGoalKg">
+                  <mat-option *ngFor="let g of availableGoals" [value]="g.value">
+                    {{ g.label }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-flat-button color="primary" class="full-width action-btn save-btn" (click)="saveProfileData()">
+                Сохранить изменения
+              </button>
+            </div>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
   </div>
 </div>

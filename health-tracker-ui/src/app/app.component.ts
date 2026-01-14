@@ -1,6 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { GoalResult } from './models/goal-result.model';
@@ -8,207 +17,243 @@ import { GoalResult } from './models/goal-result.model';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, ReactiveFormsModule, FormsModule, MatCardModule, MatFormFieldModule,
+    MatInputModule, MatButtonModule, MatSelectModule, MatTabsModule, MatIconModule, MatProgressBarModule
+  ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.css',
+  encapsulation: ViewEncapsulation.None
 })
 export class AppComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private userService = inject(UserService);
+
   currentStep: 'auth' | 'setup' | 'main' = 'auth';
-  isLoginMode: boolean = true;
-  activeTab: string = 'diary';
+  isLoginMode = true;
+  activeTab = 0;
   errorMessage: string | null = null;
-  selectedDate: string = new Date().toISOString().split('T')[0];
+  selectedDate = new Date().toLocaleDateString('en-CA');
+
+  user: User | null = null;
+  goal: GoalResult | null = null;
   dailyFoodLogs: any[] = [];
   dailyWorkoutLogs: any[] = [];
   availableGoals: { label: string, value: number }[] = [];
 
-  kcalPercent: number = 0;
-  proteinPercent: number = 0;
-  fatsPercent: number = 0;
-  carbsPercent: number = 0;
-  remainingKcal: number = 0;
+  newWeightLog: number | null = null;
+  lastEnteredWeight: number | null = null;
 
-  user: User = {
-    name: '', email: '', password: '', heightCm: 170,
-    startWeightKg: 70, targetWeightKg: 65, age: 25,
-    gender: 'MALE', activityLevel: 'SIT', weeklyGoalKg: -0.5
-  };
+  proteinPercent = 0;
+  fatsPercent = 0;
+  carbsPercent = 0;
+  remainingKcal = 0;
 
-  goal: GoalResult | null = null;
+  authForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
 
-  foodInput = {
-    description: '', caloriesPer100g: 0, portionSizeGrams: 0,
-    proteinPer100g: 0, fatsPer100g: 0, carbsPer100g: 0
-  };
+  setupForm = this.fb.group({
+    name: ['', Validators.required],
+    heightCm: [170, Validators.required],
+    startWeightKg: [70, Validators.required],
+    targetWeightKg: [65, Validators.required],
+    age: [25, Validators.required],
+    gender: ['MALE'],
+    activityLevel: ['SIT'],
+    weeklyGoalKg: [0]
+  });
 
-  workoutInput = {
-    type: '', durationMinutes: 0, caloriesBurnedPerMinute: 0
-  };
+  foodForm = this.fb.group({
+    description: ['', Validators.required],
+    caloriesPer100g: [0, Validators.required],
+    portionSizeGrams: [0, Validators.required],
+    proteinPer100g: [0],
+    fatsPer100g: [0],
+    carbsPer100g: [0]
+  });
 
-  constructor(private userService: UserService) {}
+  workoutForm = this.fb.group({
+    type: ['', Validators.required],
+    durationMinutes: [0, Validators.required],
+    caloriesBurnedPerMinute: [0, Validators.required]
+  });
 
   ngOnInit() {
-    this.updateAvailableGoals();
+    this.setupForm.valueChanges.pipe(
+      debounceTime(400),
+      distinctUntilChanged((prev, curr) => 
+        prev.startWeightKg === curr.startWeightKg && prev.targetWeightKg === curr.targetWeightKg
+      )
+    ).subscribe(() => this.updateAvailableGoals());
   }
 
   updateAvailableGoals() {
+    const cur = this.setupForm.value.startWeightKg || 0;
+    const tar = this.setupForm.value.targetWeightKg || 0;
     const goals = [{ label: 'Поддержание', value: 0 }];
-    const current = this.user.startWeightKg || 0;
-    const target = this.user.targetWeightKg || 0;
 
-    if (target < current) {
+    if (tar < cur) {
       goals.push(
-        { label: '-0.5 кг (Безопасно)', value: -0.5 },
-        { label: '-1.0 кг (Экстрим)', value: -1.0 }
+        { label: 'Мягкое похудение (-0.5 кг/нед)', value: 0.5 },
+        { label: 'Интенсивное (-1.0 кг/нед)', value: 1.0 }
       );
-    } else if (target > current) {
-      goals.push({ label: '+0.5 кг (Набор)', value: 0.5 });
+    } else if (tar > cur) {
+      goals.push(
+        { label: 'Набор массы (+0.5 кг/нед)', value: -0.5 }
+      );
     }
+
     this.availableGoals = goals;
-  }
-
-  updatePercentages() {
-    if (!this.goal) {
-      this.remainingKcal = 0;
-      this.kcalPercent = 0;
-      return;
+    const currentGoal = this.setupForm.value.weeklyGoalKg;
+    if (!this.availableGoals.find(g => g.value === currentGoal)) {
+      this.setupForm.patchValue({ weeklyGoalKg: 0 }, { emitEvent: false });
     }
-
-    const target = this.goal.targetIntakeKcal || 0;
-    const current = this.goal.currentIntakeKcal || 0;
-    const burned = this.goal.currentBurnedKcal || 0;
-
-    this.remainingKcal = target - current + burned;
-
-    const totalAllowed = target + burned;
-    this.kcalPercent = totalAllowed > 0 
-      ? Math.min((current / totalAllowed) * 100, 100) 
-      : 0;
-
-    this.proteinPercent = this.calcMacro(this.goal.currentProteinGrams, this.goal.proteinGrams);
-    this.fatsPercent = this.calcMacro(this.goal.currentFatsGrams, this.goal.fatsGrams);
-    this.carbsPercent = this.calcMacro(this.goal.currentCarbsGrams, this.goal.carbsGrams);
-  }
-
-  private calcMacro(curr: number | undefined, target: number | undefined): number {
-    if (!target || target <= 0) return 0;
-    return Math.min(((curr || 0) / target) * 100, 100);
   }
 
   handleAuth() {
-    this.errorMessage = null;
+    if (this.authForm.invalid) return;
+    const creds = this.authForm.value;
     if (this.isLoginMode) {
-      this.userService.login({ email: this.user.email, password: this.user.password }).subscribe({
-        next: (res: User) => {
+      this.userService.login(creds).subscribe({
+        next: (res) => {
           this.user = res;
-          this.updateAvailableGoals();
+          this.setupForm.patchValue(res as any);
           this.currentStep = 'main';
+          this.updateAvailableGoals();
           this.loadDashboard();
         },
-        error: () => this.errorMessage = 'Неверный email или пароль'
+        error: () => this.errorMessage = 'Ошибка входа'
       });
     } else {
-      this.userService.register(this.user).subscribe({
-        next: (res: User) => {
-          this.user = res;
-          this.updateAvailableGoals();
-          this.currentStep = 'setup';
+      const newUser = { ...this.setupForm.value, ...creds } as User;
+      this.userService.register(newUser).subscribe({
+        next: (res) => { 
+          this.user = res; 
+          this.currentStep = 'setup'; 
+          this.updateAvailableGoals(); 
         },
-        error: (err) => {
-          this.errorMessage = err.status === 409 ? 'Пользователь с таким Email уже существует' : 'Ошибка сервера';
-        }
+        error: () => this.errorMessage = 'Ошибка регистрации'
       });
     }
   }
 
-  onDateChange() {
-    this.loadDashboard();
+  saveProfileData() {
+    if (!this.user?.userId) return;
+    const updated = { ...this.user, ...this.setupForm.value } as User;
+    this.userService.saveUser(updated).subscribe(() => {
+      this.user = updated;
+      this.loadDashboard();
+    });
+  }
+
+  updateWeight() {
+    if (!this.newWeightLog || this.newWeightLog <= 0 || !this.user?.userId) return;
+
+    const weightValue = this.newWeightLog;
+    this.lastEnteredWeight = weightValue;
+
+    const weightData = {
+      userId: this.user.userId,
+      currentWeightKg: weightValue,
+      logDate: this.selectedDate
+    };
+
+    this.userService.addWeightLog(weightData).subscribe({
+      next: () => {
+        this.newWeightLog = null;
+        this.loadDashboard();
+      },
+      error: (err: any) => console.error('Ошибка сохранения веса', err)
+    });
   }
 
   loadDashboard() {
-    if (!this.user.userId) return;
-    this.userService.getGoalCalculation(this.user.userId, this.user.weeklyGoalKg).subscribe(res => {
+    if (!this.user?.userId) return;
+    const userId = this.user.userId; // Сохраняем в константу для уверенности TS
+    const rate = this.setupForm.value.weeklyGoalKg || 0;
+    
+    this.userService.getGoalCalculation(userId, rate).subscribe(res => {
       this.goal = res;
-      this.updatePercentages();
+      
+      // Используем userId без знака вопроса, так как мы выше проверили его наличие
+      this.userService.getWeightLogs(userId).subscribe((logs: any[]) => {
+        if (logs && logs.length > 0) {
+          const sortedLogs = logs.sort((a: any, b: any) => 
+            new Date(b.logDate).getTime() - new Date(a.logDate).getTime()
+          );
+          const latestWeight = sortedLogs[0].currentWeightKg;
+          
+          if (this.user) {
+            this.user.startWeightKg = latestWeight;
+            this.setupForm.patchValue({ startWeightKg: latestWeight }, { emitEvent: false });
+          }
+          if (this.goal) {
+            this.goal.currentWeightKg = latestWeight;
+          }
+        } else if (this.lastEnteredWeight) {
+          if (this.goal) this.goal.currentWeightKg = this.lastEnteredWeight;
+        } else {
+          if (this.goal) this.goal.currentWeightKg = this.user?.startWeightKg;
+        }
+        this.calculateStats();
+      });
     });
-    this.userService.getFoodLogs(this.user.userId, this.selectedDate).subscribe(logs => {
+
+    this.userService.getFoodLogs(userId, this.selectedDate).subscribe(logs => {
       this.dailyFoodLogs = logs;
     });
-    this.userService.getWorkoutLogs(this.user.userId, this.selectedDate).subscribe(logs => {
+
+    this.userService.getWorkoutLogs(userId, this.selectedDate).subscribe(logs => {
       this.dailyWorkoutLogs = logs;
     });
   }
-
-  saveProfileData() {
-    if (!this.user.userId) return;
-    this.userService.saveUser(this.user).subscribe({
-      next: () => {
-        this.updateAvailableGoals();
-        if (this.currentStep === 'setup') {
-          this.currentStep = 'main';
-        } else {
-          alert('Данные успешно обновлены!');
-        }
-        this.loadDashboard();
-      },
-      error: () => alert('Ошибка при сохранении данных профиля')
-    });
+  calculateStats() {
+    if (!this.goal) return;
+    this.remainingKcal = (this.goal.targetIntakeKcal || 0) - (this.goal.currentIntakeKcal || 0) + (this.goal.currentBurnedKcal || 0);
+    this.proteinPercent = this.calcPct(this.goal.currentProteinGrams, this.goal.proteinGrams);
+    this.fatsPercent = this.calcPct(this.goal.currentFatsGrams, this.goal.fatsGrams);
+    this.carbsPercent = this.calcPct(this.goal.currentCarbsGrams, this.goal.carbsGrams);
   }
 
+  private calcPct(c = 0, t = 0) { return t > 0 ? Math.min((c / t) * 100, 100) : 0; }
+
   addFood() {
-    if (!this.user.userId) return;
-    const log = {
-      ...this.foodInput,
+    if (this.foodForm.invalid || !this.user?.userId) return;
+    const foodData = {
+      ...this.foodForm.value,
       userId: this.user.userId,
       logDate: this.selectedDate,
       mealType: 'ANY'
     };
-    this.userService.addFoodLog(log).subscribe(() => {
-      this.loadDashboard();
-      this.resetFoodInput();
+    this.userService.addFoodLog(foodData).subscribe(() => { 
+      this.loadDashboard(); 
+      this.foodForm.reset({ caloriesPer100g: 0, portionSizeGrams: 0, proteinPer100g: 0, fatsPer100g: 0, carbsPer100g: 0 }); 
     });
   }
 
-  resetFoodInput() {
-    this.foodInput = {
-      description: '', caloriesPer100g: 0, portionSizeGrams: 0,
-      proteinPer100g: 0, fatsPer100g: 0, carbsPer100g: 0
-    };
-  }
-
-  deleteFoodLog(foodId: number) {
-    if (!foodId) return;
-    if (confirm('Удалить эту запись?')) {
-      this.userService.deleteFoodLog(foodId).subscribe(() => {
-        this.loadDashboard();
-      });
-    }
+  deleteFoodLog(id?: number) { 
+    if (id) this.userService.deleteFoodLog(id).subscribe(() => this.loadDashboard()); 
   }
 
   addWorkout() {
-    if (!this.user.userId) return;
-    const log = {
-      ...this.workoutInput,
-      userId: this.user.userId,
-      logDate: this.selectedDate
-    };
-    this.userService.addWorkoutLog(log).subscribe(() => {
-      this.loadDashboard();
-      this.workoutInput = { type: '', durationMinutes: 0, caloriesBurnedPerMinute: 0 };
-    });
+    if (this.workoutForm.invalid || !this.user?.userId) return;
+    this.userService.addWorkoutLog({ ...this.workoutForm.value, userId: this.user.userId, logDate: this.selectedDate })
+      .subscribe(() => { 
+        this.loadDashboard(); 
+        this.workoutForm.reset({ durationMinutes: 0, caloriesBurnedPerMinute: 0 }); 
+      });
   }
 
-  logout() {
-    this.currentStep = 'auth';
-    this.user = { 
-      name: '', email: '', password: '', heightCm: 170, 
-      startWeightKg: 70, targetWeightKg: 65, age: 25, 
-      gender: 'MALE', activityLevel: 'SIT', weeklyGoalKg: -0.5 
-    };
-    this.dailyFoodLogs = [];
-    this.dailyWorkoutLogs = [];
-    this.goal = null;
-    this.remainingKcal = 0;
-    this.updateAvailableGoals();
+  deleteWorkoutLog(id?: number) { 
+    if (id) this.userService.deleteWorkoutLog(id).subscribe(() => this.loadDashboard()); 
+  }
+
+  logout() { 
+    this.currentStep = 'auth'; 
+    this.user = null; 
+    this.lastEnteredWeight = null;
+    this.authForm.reset(); 
   }
 }

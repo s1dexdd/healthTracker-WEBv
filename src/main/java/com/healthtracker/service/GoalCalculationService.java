@@ -40,7 +40,7 @@ public class GoalCalculationService {
         BigDecimal totalKcalChangePerWeek = weeklyRateKg.multiply(new BigDecimal(CALORIES_PER_KG));
         int dailyAdjustment = totalKcalChangePerWeek.divide(new BigDecimal(DAYS_IN_WEEK), 0, RoundingMode.HALF_UP).intValue();
         
-        int targetIntakeKcal = tdee + dailyAdjustment;
+        int targetIntakeKcal = tdee - dailyAdjustment;
 
         if (user.getGender() == User.Gender.FEMALE && targetIntakeKcal < 1200) {
             targetIntakeKcal = 1200;
@@ -48,14 +48,10 @@ public class GoalCalculationService {
             targetIntakeKcal = 1500;
         }
 
-        String goalDescription = "Поддержание веса";
-        if (weeklyRateKg.compareTo(BigDecimal.ZERO) < 0) {
-            goalDescription = "Похудение (цель: " + weeklyRateKg + " кг/нед)";
-        } else if (weeklyRateKg.compareTo(BigDecimal.ZERO) > 0) {
-            goalDescription = "Набор веса (цель: +" + weeklyRateKg + " кг/нед)";
-        }
+        String goalDescription = (weeklyRateKg.compareTo(BigDecimal.ZERO) == 0) ? "Поддержание веса" : 
+                                 (weeklyRateKg.compareTo(BigDecimal.ZERO) > 0) ? "Похудение" : "Набор веса";
 
-        int[] targetMacros = calculateTargetMacrosByCalories(targetIntakeKcal);
+        int[] targetMacros = calculateTargetMacrosByCalories(targetIntakeKcal, user);
         
         Date today = new Date(System.currentTimeMillis());
         List<FoodLog> todayLogs = foodLogDAO.getFoodLogsByDate(userId, today);
@@ -72,8 +68,6 @@ public class GoalCalculationService {
             if (log.getCarbsG() != null) currentC = currentC.add(log.getCarbsG());
         }
 
-        int currentBurnedKcal = reportDAO.calculateDailyWorkoutExpenditure(userId, today);
-
         GoalResult result = new GoalResult(
                 targetIntakeKcal,
                 dailyAdjustment,
@@ -85,18 +79,25 @@ public class GoalCalculationService {
         );
 
         result.setCurrentIntakeKcal(currentIntakeKcal);
-        result.setCurrentBurnedKcal(currentBurnedKcal);
+        result.setCurrentBurnedKcal(reportDAO.calculateDailyWorkoutExpenditure(userId, today));
         result.setCurrentProteinGrams(currentP.setScale(0, RoundingMode.HALF_UP).intValue());
         result.setCurrentFatsGrams(currentF.setScale(0, RoundingMode.HALF_UP).intValue());
         result.setCurrentCarbsGrams(currentC.setScale(0, RoundingMode.HALF_UP).intValue());
 
+        BigDecimal latestWeight = weightLogDAO.getAbsoluteLatestWeight(userId);
+        
+        float weightToSet = (latestWeight != null) ? latestWeight.floatValue() : user.getStartWeightKg().floatValue();
+        result.setCurrentWeightKg(weightToSet);
+
         return result;
     }
 
-    private int[] calculateTargetMacrosByCalories(int totalKcal) {
-        int protein = (int) Math.round((totalKcal * 0.30) / 4);
-        int fats = (int) Math.round((totalKcal * 0.25) / 9);
-        int carbs = (int) Math.round((totalKcal * 0.45) / 4);
+    private int[] calculateTargetMacrosByCalories(int totalKcal, User user) {
+        float weight = user.getStartWeightKg().floatValue();
+        int protein = Math.round(weight * 1.8f);
+        int fats = Math.round(weight * 0.9f);
+        int carbsKcal = totalKcal - (protein * 4) - (fats * 9);
+        int carbs = Math.max(carbsKcal / 4, (int)((totalKcal * 0.2) / 4));
         
         return new int[]{protein, fats, carbs};
     }

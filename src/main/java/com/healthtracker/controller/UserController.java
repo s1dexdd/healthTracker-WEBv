@@ -70,8 +70,10 @@ public class UserController {
 
     @PostMapping("/food")
     public void addFood(@RequestBody FoodLog food) {
+    if (food.getLogDate() == null) {
         food.setLogDate(new java.sql.Timestamp(System.currentTimeMillis()));
-        foodLogDAO.insertFoodLog(food);
+    }
+    foodLogDAO.insertFoodLog(food);
     }
 
     @PostMapping("/workout")
@@ -91,16 +93,25 @@ public class UserController {
     }
 
     @PostMapping("/weight")
-    public void addWeight(@RequestBody WeightLog weightLog) {
-        if (weightLog.getLogDate() == null) {
-            weightLog.setLogDate(new java.sql.Date(System.currentTimeMillis()));
-        }
-        weightLogDAO.insertWeightLog(weightLog);
+public void addWeight(@RequestBody WeightLog weightLog) {
+    if (weightLog.getLogDate() == null) {
+        weightLog.setLogDate(new java.sql.Date(System.currentTimeMillis()));
     }
+    weightLogDAO.insertWeightLog(weightLog);
+}
 
     @DeleteMapping("/food/{logId}")
     public ResponseEntity<Void> deleteFood(@PathVariable int logId) {
         boolean deleted = foodLogDAO.deleteFoodLog(logId);
         return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
+    @GetMapping("/weight-logs")
+public List<WeightLog> getWeightLogs(@RequestParam int userId) {
+    return weightLogDAO.getWeightLogsByUserId(userId);
+}
+@DeleteMapping("/workout/{logId}")
+public ResponseEntity<Void> deleteWorkout(@PathVariable int logId) {
+    boolean deleted = workoutLogDAO.deleteWorkoutLog(logId);
+    return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+}
 }
