@@ -8,11 +8,13 @@ public class GoalResult {
     private int proteinGrams;
     private int fatsGrams;
     private int carbsGrams;
-    // Новые поля, которые мы добавили ранее в Angular
+    
     private int currentIntakeKcal; 
     private int currentBurnedKcal;
+    private int currentProteinGrams;
+    private int currentFatsGrams;
+    private int currentCarbsGrams;
 
-    // ОБЯЗАТЕЛЬНО: Пустой конструктор для Jackson
     public GoalResult() {}
 
     public GoalResult(int targetIntakeKcal, int dailyDeficitOrSurplusKcal, String goalDescription, 
@@ -26,7 +28,6 @@ public class GoalResult {
         this.carbsGrams = carbsGrams;
     }
 
-    // Геттеры для ВСЕХ полей (обязательно для JSON)
     public int getTargetIntakeKcal() { return targetIntakeKcal; }
     public int getDailyDeficitOrSurplusKcal() { return dailyDeficitOrSurplusKcal; }
     public String getGoalDescription() { return goalDescription; }
@@ -34,8 +35,19 @@ public class GoalResult {
     public int getProteinGrams() { return proteinGrams; }
     public int getFatsGrams() { return fatsGrams; }
     public int getCarbsGrams() { return carbsGrams; }
+
     public int getCurrentIntakeKcal() { return currentIntakeKcal; }
     public void setCurrentIntakeKcal(int val) { this.currentIntakeKcal = val; }
+
     public int getCurrentBurnedKcal() { return currentBurnedKcal; }
     public void setCurrentBurnedKcal(int val) { this.currentBurnedKcal = val; }
+
+    public int getCurrentProteinGrams() { return currentProteinGrams; }
+    public void setCurrentProteinGrams(int val) { this.currentProteinGrams = val; }
+
+    public int getCurrentFatsGrams() { return currentFatsGrams; }
+    public void setCurrentFatsGrams(int val) { this.currentFatsGrams = val; }
+
+    public int getCurrentCarbsGrams() { return currentCarbsGrams; }
+    public void setCurrentCarbsGrams(int val) { this.currentCarbsGrams = val; }
 }

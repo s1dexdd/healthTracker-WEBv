@@ -1,24 +1,25 @@
 package com.healthtracker.init;
 
 import com.healthtracker.util.DBConfig;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.SQLException;
 
 public class DatabaseInitializer {
 
-
-    private static final  String CREATE_USERS_TABLE=
+    private static final String CREATE_USERS_TABLE =
             "CREATE TABLE IF NOT EXISTS \"USER\" (" +
                     "user_id INT PRIMARY KEY AUTO_INCREMENT," +
                     "name VARCHAR(100) NOT NULL," +
+                    "email VARCHAR(100) UNIQUE," +
+                    "password VARCHAR(100)," +
                     "height_cm INT NOT NULL," +
                     "start_weight_kg DECIMAL(5,2) NOT NULL," +
                     "target_weight_kg DECIMAL(5,2) NOT NULL," +
                     "age INT NOT NULL," +
                     "gender VARCHAR(10) NOT NULL," +
-                    "activity_level VARCHAR(10) NOT NULL" +
+                    "activity_level VARCHAR(10) NOT NULL," +
+                    "weekly_goal_kg DECIMAL(5,2)" +
                     ");";
 
     private static final String CREATE_FOOD_LOG_TABLE =
@@ -33,7 +34,7 @@ public class DatabaseInitializer {
                     "fats_per_100g DECIMAL(5,1)," +
                     "carbs_per_100g DECIMAL(5,1)," +
                     "portion_size_grams INT NOT NULL," +
-                    "calories INT NOT NULL," +
+                    "calories INT," +
                     "protein_g DECIMAL(5,1)," +
                     "fats_g DECIMAL(5,1)," +
                     "carbs_g DECIMAL(5,1)," +
@@ -61,28 +62,18 @@ public class DatabaseInitializer {
                     "  FOREIGN KEY (user_id) REFERENCES \"USER\"(user_id) ON DELETE CASCADE" +
                     ")";
 
-
-
-
-
-
-    public static void initialise(){
-        try (Connection connection=DBConfig.getConnection();
-             Statement statement = connection.createStatement()){
-
+    public static void initialise() {
+        try (Connection connection = DBConfig.getConnection();
+             Statement statement = connection.createStatement()) {
 
             statement.executeUpdate(CREATE_USERS_TABLE);
             statement.executeUpdate(CREATE_FOOD_LOG_TABLE);
             statement.executeUpdate(CREATE_WORKOUT_LOG_TABLE);
             statement.executeUpdate(CREATE_WEIGHT_LOG_TABLE_SQL);
 
-
-
-
-
-            System.out.println("база данных готова к работе. Добавлен тестовый пользователь (ID 1).");
-        }catch(SQLException e){
-            System.err.println("ошибка при инициализации базы данных");
+            System.out.println("База данных готова к работе.");
+        } catch (SQLException e) {
+            System.err.println("Ошибка при инициализации базы данных");
             e.printStackTrace();
         }
     }

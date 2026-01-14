@@ -1,12 +1,8 @@
 package com.healthtracker.dao;
 
-
 import com.healthtracker.model.User;
 import com.healthtracker.model.WeightLog;
-import com.healthtracker.model.WorkoutLog;
-
 import java.math.BigDecimal;
-
 
 public class BMRDAO {
     private final UserDAO userDAO;
@@ -16,22 +12,23 @@ public class BMRDAO {
         this.userDAO = userDAO;
         this.weightLogDAO = weightLogDAO;
     }
-    public int calculateBMR(int userId){
-        User user=userDAO.selectUser(userId);
 
-        BigDecimal currentWeight=weightLogDAO.getAbsoluteLatestWeight(userId);
-        if(user==null || currentWeight==null){
-            return 0;
+    public int calculateBMR(int userId) {
+        User user = userDAO.selectUser(userId);
+        if (user == null) return 0;
+
+        BigDecimal currentWeight = weightLogDAO.getAbsoluteLatestWeight(userId);
+        double weight = (currentWeight != null) ? currentWeight.doubleValue() : user.getStartWeightKg().doubleValue();
+        double height = user.getHeightCm();
+        int age = user.getAge();
+
+        double bmr;
+        if (user.getGender() == User.Gender.MALE) {
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        } else {
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
         }
-        double weight=currentWeight.doubleValue();
-        int heighthCm=user.getHeightCm();
-        int age=user.getAge();
 
-
-        if(user.getGender()== User.Gender.MALE){
-            return (int) Math.round(88.362+(13.397 * weight)+(4.799 * heighthCm) -(5.677 * age));
-        }else{
-            return (int) Math.round(447.593+(9.247 * weight)+(3.098 * heighthCm) -(4.330 * age));
-        }
+        return (int) Math.round(bmr);
     }
 }

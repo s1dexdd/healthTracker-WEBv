@@ -1,6 +1,5 @@
 package com.healthtracker.model;
 
-import com.healthtracker.model.WeightLog;
 import java.math.BigDecimal;
 import java.io.Serializable;
 
@@ -8,15 +7,20 @@ public class User implements Serializable {
 
     private int userId;
     private String name;
+    private String email;
+    private String password;
     private int heightCm;
     private BigDecimal startWeightKg;
     private BigDecimal targetWeightKg;
     private int age;
-    public enum Gender{
+    private BigDecimal weeklyGoalKg;
+
+    public enum Gender {
         MALE,
         FEMALE
     }
-    public enum ActivityLevel{
+
+    public enum ActivityLevel {
         SIT(1.2f),
         LIGHT(1.375f),
         MID(1.55f);
@@ -26,6 +30,7 @@ public class User implements Serializable {
         ActivityLevel(float coefficient) {
             this.coefficient = coefficient;
         }
+
         public float getCoefficient() {
             return coefficient;
         }
@@ -34,24 +39,21 @@ public class User implements Serializable {
     private Gender gender;
     private ActivityLevel activityLevel;
 
-
-
-    public User(int userId, String name, int heightCm, int age , Gender gender, BigDecimal startWeightKg, BigDecimal targetWeightKg, ActivityLevel activityLevel) {
-        this.userId = userId;
-        this.name = name;
-        this.heightCm = heightCm;
-        this.age= age;
-        this.gender=gender;
-        this.startWeightKg = startWeightKg;
-        this.targetWeightKg = targetWeightKg;
-        this.activityLevel=activityLevel;
-
-    }
     public User() {
     }
 
-    public User(String name, int heightCm, BigDecimal startWeightKg, BigDecimal targetWeightKg, int age,Gender gender,ActivityLevel activityLevel) {
-        this(-1, name, heightCm ,age , gender , startWeightKg, targetWeightKg, activityLevel);
+    public User(int userId, String name, String email, String password, int heightCm, int age, Gender gender, BigDecimal startWeightKg, BigDecimal targetWeightKg, ActivityLevel activityLevel, BigDecimal weeklyGoalKg) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.heightCm = heightCm;
+        this.age = age;
+        this.gender = gender;
+        this.startWeightKg = startWeightKg;
+        this.targetWeightKg = targetWeightKg;
+        this.activityLevel = activityLevel;
+        this.weeklyGoalKg = weeklyGoalKg;
     }
 
     public int getUserId() {
@@ -68,6 +70,22 @@ public class User implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public int getHeightCm() {
@@ -118,11 +136,18 @@ public class User implements Serializable {
         this.activityLevel = activityLevel;
     }
 
+    public BigDecimal getWeeklyGoalKg() {
+        return weeklyGoalKg;
+    }
 
+    public void setWeeklyGoalKg(BigDecimal weeklyGoalKg) {
+        this.weeklyGoalKg = weeklyGoalKg;
+    }
 
     @Override
     public String toString() {
-        return "User [ID=" + userId + ", Name='" + name + "', Height=" + heightCm + ", Age=" + age + ", Gender=" + gender +
-                ", StartWeight=" + startWeightKg + ", TargetWeight=" + targetWeightKg  +  ", Activity level: " + activityLevel+ "]";
+        return "User [ID=" + userId + ", Name='" + name + "', Email='" + email + "', Height=" + heightCm + ", Age=" + age + ", Gender=" + gender +
+                ", StartWeight=" + startWeightKg + ", TargetWeight=" + targetWeightKg + ", Activity=" + activityLevel + 
+                ", WeeklyGoal=" + weeklyGoalKg + "]";
     }
 }

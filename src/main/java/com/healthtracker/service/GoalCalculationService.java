@@ -3,14 +3,15 @@ package com.healthtracker.service;
 import com.healthtracker.dao.ReportDAO;
 import com.healthtracker.dao.UserDAO;
 import com.healthtracker.dao.WeightLogDAO;
+import com.healthtracker.dao.FoodLogDAO;
 import com.healthtracker.model.GoalResult;
 import com.healthtracker.model.User;
+import com.healthtracker.model.FoodLog;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.sql.Date;
+import java.util.List;
 
 public class GoalCalculationService {
     private static final int CALORIES_PER_KG = 7700;
@@ -19,11 +20,13 @@ public class GoalCalculationService {
     private final ReportDAO reportDAO;
     private final WeightLogDAO weightLogDAO;
     private final UserDAO userDAO;
+    private final FoodLogDAO foodLogDAO;
 
-    public GoalCalculationService(ReportDAO reportDAO, WeightLogDAO weightLogDAO, UserDAO userDAO) {
+    public GoalCalculationService(ReportDAO reportDAO, WeightLogDAO weightLogDAO, UserDAO userDAO, FoodLogDAO foodLogDAO) {
         this.reportDAO = reportDAO;
         this.weightLogDAO = weightLogDAO;
         this.userDAO = userDAO;
+        this.foodLogDAO = foodLogDAO;
     }
 
     public GoalResult calculateTargetIntakeByWeeklyRate(int userId, BigDecimal weeklyRateKg) {
@@ -32,15 +35,12 @@ public class GoalCalculationService {
             throw new IllegalArgumentException("Пользователь не найден.");
         }
 
-        int neat = reportDAO.calculateDailyNeatExpenditure(userId);
+        int tdee = reportDAO.calculateDailyNeatExpenditure(userId);
 
-        BigDecimal totalKcalPerWeek = weeklyRateKg.multiply(new BigDecimal(CALORIES_PER_KG));
-
-        int dailyDeficitOrSurplus = totalKcalPerWeek.divide(new BigDecimal(DAYS_IN_WEEK), 0, RoundingMode.HALF_UP)
-                .intValue();
-
-        int targetIntakeKcal = neat + dailyDeficitOrSurplus;
-
+        BigDecimal totalKcalChangePerWeek = weeklyRateKg.multiply(new BigDecimal(CALORIES_PER_KG));
+        int dailyAdjustment = totalKcalChangePerWeek.divide(new BigDecimal(DAYS_IN_WEEK), 0, RoundingMode.HALF_UP).intValue();
+        
+        int targetIntakeKcal = tdee + dailyAdjustment;
 
         if (user.getGender() == User.Gender.FEMALE && targetIntakeKcal < 1200) {
             targetIntakeKcal = 1200;
@@ -48,57 +48,56 @@ public class GoalCalculationService {
             targetIntakeKcal = 1500;
         }
 
-
         String goalDescription = "Поддержание веса";
-        if (weeklyRateKg.floatValue() < 0) {
-            goalDescription = "Похудение";
-        } else if (weeklyRateKg.floatValue() > 0) {
-            goalDescription = "Набор веса";
+        if (weeklyRateKg.compareTo(BigDecimal.ZERO) < 0) {
+            goalDescription = "Похудение (цель: " + weeklyRateKg + " кг/нед)";
+        } else if (weeklyRateKg.compareTo(BigDecimal.ZERO) > 0) {
+            goalDescription = "Набор веса (цель: +" + weeklyRateKg + " кг/нед)";
         }
 
+        int[] targetMacros = calculateTargetMacrosByCalories(targetIntakeKcal);
+        
+        Date today = new Date(System.currentTimeMillis());
+        List<FoodLog> todayLogs = foodLogDAO.getFoodLogsByDate(userId, today);
+        
+        int currentIntakeKcal = 0;
+        BigDecimal currentP = BigDecimal.ZERO;
+        BigDecimal currentF = BigDecimal.ZERO;
+        BigDecimal currentC = BigDecimal.ZERO;
 
-        int[] macros = calculateTargetMacros(userId);
-        int proteinGrams = macros[0];
-        int fatsGrams = macros[1];
-        int carbsGrams = macros[2];
+        for (FoodLog log : todayLogs) {
+            currentIntakeKcal += log.getCalories();
+            if (log.getProteinG() != null) currentP = currentP.add(log.getProteinG());
+            if (log.getFatsG() != null) currentF = currentF.add(log.getFatsG());
+            if (log.getCarbsG() != null) currentC = currentC.add(log.getCarbsG());
+        }
 
+        int currentBurnedKcal = reportDAO.calculateDailyWorkoutExpenditure(userId, today);
 
-        float totalWeightChangeKg = weeklyRateKg.floatValue();
-
-        return new GoalResult(
+        GoalResult result = new GoalResult(
                 targetIntakeKcal,
-                dailyDeficitOrSurplus,
+                dailyAdjustment,
                 goalDescription,
-                totalWeightChangeKg,
-                proteinGrams,
-                fatsGrams,
-                carbsGrams
+                weeklyRateKg.floatValue(),
+                targetMacros[0],
+                targetMacros[1],
+                targetMacros[2]
         );
+
+        result.setCurrentIntakeKcal(currentIntakeKcal);
+        result.setCurrentBurnedKcal(currentBurnedKcal);
+        result.setCurrentProteinGrams(currentP.setScale(0, RoundingMode.HALF_UP).intValue());
+        result.setCurrentFatsGrams(currentF.setScale(0, RoundingMode.HALF_UP).intValue());
+        result.setCurrentCarbsGrams(currentC.setScale(0, RoundingMode.HALF_UP).intValue());
+
+        return result;
     }
 
-    private int[] calculateTargetMacros(int userId) {
-
-        final BigDecimal PROTEIN_G_PER_KG = new BigDecimal("1.8");
-        final BigDecimal FATS_G_PER_KG = new BigDecimal("1.0");
-        final BigDecimal CARBS_G_PER_KG = new BigDecimal("3.6");
-        BigDecimal weightKg = weightLogDAO.getAbsoluteLatestWeight(userId);
-        if (weightKg == null) {
-        User user = userDAO.selectUser(userId);
-        weightKg = (user != null) ? user.getStartWeightKg() : new BigDecimal("70");
+    private int[] calculateTargetMacrosByCalories(int totalKcal) {
+        int protein = (int) Math.round((totalKcal * 0.30) / 4);
+        int fats = (int) Math.round((totalKcal * 0.25) / 9);
+        int carbs = (int) Math.round((totalKcal * 0.45) / 4);
+        
+        return new int[]{protein, fats, carbs};
     }
-        BigDecimal proteinGramsBD = weightKg.multiply(PROTEIN_G_PER_KG)
-                .setScale(0, RoundingMode.HALF_UP);
-        int proteinGrams = proteinGramsBD.intValueExact();
-
-        BigDecimal fatsGramsBD = weightKg.multiply(FATS_G_PER_KG)
-                .setScale(0, RoundingMode.HALF_UP);
-        int fatsGrams = fatsGramsBD.intValueExact();
-
-        BigDecimal carbsGramsBD = weightKg.multiply(CARBS_G_PER_KG)
-                .setScale(0, RoundingMode.HALF_UP);
-        int carbsGrams = carbsGramsBD.intValueExact();
-        return new int[]{proteinGrams, fatsGrams, carbsGrams};
-    }
-
-
 }

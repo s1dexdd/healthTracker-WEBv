@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.io.Serializable;
 import java.time.format.DateTimeFormatter;
+import java.math.RoundingMode;
 
 public class FoodLog implements Serializable {
     private int foodId;
@@ -41,6 +42,7 @@ public class FoodLog implements Serializable {
         this.fatsG = fatsG;
         this.carbsG = carbsG;
     }
+
     public FoodLog() {}
 
     public FoodLog(int userId, String description, String mealType,
@@ -60,19 +62,25 @@ public class FoodLog implements Serializable {
     }
 
     public BigDecimal calculateTotalProtein() {
-        return proteinPer100g.multiply(new BigDecimal(portionSizeGrams).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP));
+        if (proteinPer100g == null) return BigDecimal.ZERO;
+        return proteinPer100g.multiply(new BigDecimal(portionSizeGrams))
+                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotalFats() {
-        return fatsPer100g.multiply(new BigDecimal(portionSizeGrams).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP));
+        if (fatsPer100g == null) return BigDecimal.ZERO;
+        return fatsPer100g.multiply(new BigDecimal(portionSizeGrams))
+                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotalCarbs() {
-        return carbsPer100g.multiply(new BigDecimal(portionSizeGrams).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP));
+        if (carbsPer100g == null) return BigDecimal.ZERO;
+        return carbsPer100g.multiply(new BigDecimal(portionSizeGrams))
+                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
-
     public String getFormattedTime() {
+        if (logDate == null) return "00:00";
         return logDate.toLocalDateTime().toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 

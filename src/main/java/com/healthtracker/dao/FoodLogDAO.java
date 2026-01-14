@@ -10,25 +10,20 @@ import java.util.List;
 public class FoodLogDAO {
 
     private static final String INSERT_LOG_SQL =
-            "INSERT INTO \"FOOD_LOG\" (user_id, log_date, description,meal_type, calories_per_100g, protein_per_100g, fats_per_100g, carbs_per_100g, portion_size_grams, calories, protein_g, fats_g, carbs_g) " +
+            "INSERT INTO \"FOOD_LOG\" (user_id, log_date, description, meal_type, calories_per_100g, protein_per_100g, fats_per_100g, carbs_per_100g, portion_size_grams, calories, protein_g, fats_g, carbs_g) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SELECT_DAILY_CALORIES_SQL =
-            "SELECT SUM(calories) AS total_calories FROM \"FOOD_LOG\" WHERE user_id = ? AND CAST(log_date AS DATE) = CAST(? AS DATE)";
+            "SELECT SUM(calories) AS total_calories, SUM(protein_g) AS total_protein, SUM(fats_g) AS total_fats, SUM(carbs_g) AS total_carbs " +
+            "FROM \"FOOD_LOG\" WHERE user_id = ? AND CAST(log_date AS DATE) = CAST(? AS DATE)";
 
     private static final String SELECT_LOGS_BY_DATE =
             "SELECT food_id, user_id, log_date, description, meal_type, calories_per_100g, protein_per_100g, fats_per_100g, carbs_per_100g, portion_size_grams, calories, protein_g, fats_g, carbs_g FROM \"FOOD_LOG\" WHERE user_id = ? AND CAST(log_date AS DATE) = CAST(? AS DATE) ORDER BY log_date ASC";
-
 
     private static final String DELETE_LOG_SQL =
             "DELETE FROM \"FOOD_LOG\" WHERE food_id = ?";
 
     public void insertFoodLog(FoodLog log) {
-        int totalCalories = log.calculateTotalCalories();
-        BigDecimal totalProtein = log.calculateTotalProtein();
-        BigDecimal totalFats = log.calculateTotalFats();
-        BigDecimal totalCarbs = log.calculateTotalCarbs();
-
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(INSERT_LOG_SQL)) {
             preparedStatement.setInt(1, log.getUserId());
@@ -40,47 +35,37 @@ public class FoodLogDAO {
             preparedStatement.setBigDecimal(7, log.getFatsPer100g());
             preparedStatement.setBigDecimal(8, log.getCarbsPer100g());
             preparedStatement.setInt(9, log.getPortionSizeGrams());
-            preparedStatement.setInt(10, totalCalories);
-            preparedStatement.setBigDecimal(11, totalProtein);
-            preparedStatement.setBigDecimal(12, totalFats);
-            preparedStatement.setBigDecimal(13, totalCarbs);
+            preparedStatement.setInt(10, log.calculateTotalCalories());
+            preparedStatement.setBigDecimal(11, log.calculateTotalProtein());
+            preparedStatement.setBigDecimal(12, log.calculateTotalFats());
+            preparedStatement.setBigDecimal(13, log.calculateTotalCarbs());
 
             preparedStatement.executeUpdate();
-
         } catch (SQLException e) {
-            System.err.println("Ошибка при вставке записи о еде: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     public int getDailyTotalCalories(int userId, Date date) {
-        int totalCalories = 0;
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(SELECT_DAILY_CALORIES_SQL)) {
-
             preparedStatement.setInt(1, userId);
             preparedStatement.setDate(2, date);
-
             try (ResultSet rs = preparedStatement.executeQuery()) {
-                if (rs.next()) {
-                    totalCalories = rs.getInt("total_calories");
-                }
+                if (rs.next()) return rs.getInt("total_calories");
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка при получении ежедневного количества калорий: " + e.getMessage());
+            e.printStackTrace();
         }
-        return totalCalories;
+        return 0;
     }
 
     public List<FoodLog> getFoodLogsByDate(int userId, Date date) {
         List<FoodLog> logs = new ArrayList<>();
-
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(SELECT_LOGS_BY_DATE)) {
-
             preparedStatement.setInt(1, userId);
             preparedStatement.setDate(2, date);
-
             try (ResultSet rs = preparedStatement.executeQuery()) {
                 while (rs.next()) {
                     FoodLog log = new FoodLog(
@@ -103,21 +88,19 @@ public class FoodLogDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка при получении истории питания: " + e.getMessage());
             e.printStackTrace();
         }
         return logs;
     }
 
-
-    public void deleteFoodLog(int foodId) throws SQLException {
+    public boolean deleteFoodLog(int foodId) {
         try (Connection connection = DBConfig.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_LOG_SQL)) {
             preparedStatement.setInt(1, foodId);
-            preparedStatement.executeUpdate();
+            return preparedStatement.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("Ошибка при удалении записи питания с ID " + foodId + ": " + e.getMessage());
-            throw e;
+            e.printStackTrace();
+            return false;
         }
     }
 }

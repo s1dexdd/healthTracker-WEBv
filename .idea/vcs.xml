@@ -2,6 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/bin" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/bin/health-tracker-ui" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/health-tracker-ui" vcs="Git" />
   </component>
 </project>

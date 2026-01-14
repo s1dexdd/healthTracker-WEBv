@@ -15,7 +15,7 @@ public class HealthTrackerApplication {
 
     @PostConstruct
     public void init() {
-        // Запускаем вашу инициализацию таблиц сразу после старта
+        
         DatabaseInitializer.initialise();
     }
 }

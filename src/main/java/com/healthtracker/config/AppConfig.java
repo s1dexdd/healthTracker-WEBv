@@ -39,7 +39,7 @@ public class AppConfig {
         return new ReportDAO(f, wr, b, u, we);
     }
     @Bean
-    public GoalCalculationService goalCalculationService(ReportDAO reportDAO, WeightLogDAO weightLogDAO, UserDAO userDAO) {
-        return new GoalCalculationService(reportDAO, weightLogDAO, userDAO);
+    public GoalCalculationService goalCalculationService(ReportDAO reportDAO, WeightLogDAO weightLogDAO, UserDAO userDAO, FoodLogDAO foodLogDAO) {
+        return new GoalCalculationService(reportDAO, weightLogDAO, userDAO,foodLogDAO);
     }
 }
