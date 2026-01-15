@@ -58,7 +58,7 @@ html, body {
   min-height: 100vh;
 }
 
-/* Главная карточка "Обзор" с градиентом */
+
 .summary-card {
   background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
   color: white !important;
@@ -89,7 +89,7 @@ html, body {
   line-height: 1;
 }
 
-/* Сетка статистики внутри синей карточки */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -114,7 +114,7 @@ html, body {
   color: white !important;
 }
 
-/* Белая карточка макронутриентов */
+
 .card {
   background: var(--card-bg) !important;
   border-radius: 28px !important;
@@ -133,7 +133,7 @@ html, body {
   letter-spacing: -0.5px;
 }
 
-/* Полоски прогресса (Белки, Жиры, Углеводы) */
+
 .macro-box {
   margin-bottom: 22px;
 }
@@ -153,12 +153,12 @@ html, body {
   background-color: #f1f5f9 !important;
 }
 
-/* Кастомные цвета для каждой полоски */
+
 ::ng-deep .p-protein .mat-progress-bar-fill::after { background-color: var(--protein) !important; }
 ::ng-deep .p-fats .mat-progress-bar-fill::after { background-color: var(--fats) !important; }
 ::ng-deep .p-carbs .mat-progress-bar-fill::after { background-color: var(--carbs) !important; }
 
-/* Стили вкладок (Tabs) */
+
 ::ng-deep .mat-mdc-tab-group {
   --mdc-tab-indicator-active-indicator-color: var(--primary);
 }

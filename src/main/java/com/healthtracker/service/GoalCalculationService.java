@@ -93,12 +93,20 @@ public class GoalCalculationService {
     }
 
     private int[] calculateTargetMacrosByCalories(int totalKcal, User user) {
-        float weight = user.getStartWeightKg().floatValue();
-        int protein = Math.round(weight * 1.8f);
-        int fats = Math.round(weight * 0.9f);
-        int carbsKcal = totalKcal - (protein * 4) - (fats * 9);
-        int carbs = Math.max(carbsKcal / 4, (int)((totalKcal * 0.2) / 4));
-        
-        return new int[]{protein, fats, carbs};
+    float weight = user.getStartWeightKg().floatValue();
+    int proteinG = Math.round(weight * 1.8f);
+    int fatsG = Math.round(weight * 0.9f);
+
+    int caloriesFromProteinAndFats = (proteinG * 4) + (fatsG * 9);
+    int remainingKcal = totalKcal - caloriesFromProteinAndFats;
+    
+    int carbsG = Math.round(remainingKcal / 4.0f);
+    int minCarbsG = Math.round(weight * 1.0f);
+
+    if (carbsG < minCarbsG) {
+        carbsG = minCarbsG;
     }
+
+    return new int[]{proteinG, fatsG, carbsG};
+}
 }

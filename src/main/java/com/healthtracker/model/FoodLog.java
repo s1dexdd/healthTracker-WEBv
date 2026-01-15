@@ -1,10 +1,9 @@
 package com.healthtracker.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.io.Serializable;
-import java.time.format.DateTimeFormatter;
-import java.math.RoundingMode;
 
 public class FoodLog implements Serializable {
     private int foodId;
@@ -17,11 +16,12 @@ public class FoodLog implements Serializable {
     private BigDecimal fatsPer100g;
     private BigDecimal carbsPer100g;
     private int portionSizeGrams;
-
     private int calories;
     private BigDecimal proteinG;
     private BigDecimal fatsG;
     private BigDecimal carbsG;
+
+    public FoodLog() {}
 
     public FoodLog(int foodId, int userId, Timestamp logDate, String description, String mealType,
                    int caloriesPer100g, BigDecimal proteinPer100g, BigDecimal fatsPer100g,
@@ -43,92 +43,51 @@ public class FoodLog implements Serializable {
         this.carbsG = carbsG;
     }
 
-    public FoodLog() {}
-
-    public FoodLog(int userId, String description, String mealType,
-                   int caloriesPer100g, BigDecimal proteinPer100g, BigDecimal fatsPer100g,
-                   BigDecimal carbsPer100g, int portionSizeGrams) {
-        this(-1, userId, new Timestamp(System.currentTimeMillis()), description, mealType,
-                caloriesPer100g, proteinPer100g, fatsPer100g, carbsPer100g, portionSizeGrams, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
-
-        this.calories = calculateTotalCalories();
-        this.proteinG = calculateTotalProtein();
-        this.fatsG = calculateTotalFats();
-        this.carbsG = calculateTotalCarbs();
-    }
-
     public int calculateTotalCalories() {
-        return (int) Math.round(((double) portionSizeGrams / 100.0) * caloriesPer100g);
+        return (caloriesPer100g * portionSizeGrams) / 100;
     }
 
     public BigDecimal calculateTotalProtein() {
         if (proteinPer100g == null) return BigDecimal.ZERO;
-        return proteinPer100g.multiply(new BigDecimal(portionSizeGrams))
-                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+        return proteinPer100g.multiply(new BigDecimal(portionSizeGrams)).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotalFats() {
         if (fatsPer100g == null) return BigDecimal.ZERO;
-        return fatsPer100g.multiply(new BigDecimal(portionSizeGrams))
-                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+        return fatsPer100g.multiply(new BigDecimal(portionSizeGrams)).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotalCarbs() {
         if (carbsPer100g == null) return BigDecimal.ZERO;
-        return carbsPer100g.multiply(new BigDecimal(portionSizeGrams))
-                .divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
-    }
-
-    public String getFormattedTime() {
-        if (logDate == null) return "00:00";
-        return logDate.toLocalDateTime().toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s - %s (%d ккал)", 
-                getFormattedTime(), description, calories);
+        return carbsPer100g.multiply(new BigDecimal(portionSizeGrams)).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
     }
 
     public int getFoodId() { return foodId; }
     public void setFoodId(int foodId) { this.foodId = foodId; }
-
     public int getUserId() { return userId; }
     public void setUserId(int userId) { this.userId = userId; }
-
     public Timestamp getLogDate() { return logDate; }
     public void setLogDate(Timestamp logDate) { this.logDate = logDate; }
-
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
     public String getMealType() { return mealType; }
     public void setMealType(String mealType) { this.mealType = mealType; }
-
     public int getCaloriesPer100g() { return caloriesPer100g; }
     public void setCaloriesPer100g(int caloriesPer100g) { this.caloriesPer100g = caloriesPer100g; }
-
     public BigDecimal getProteinPer100g() { return proteinPer100g; }
     public void setProteinPer100g(BigDecimal proteinPer100g) { this.proteinPer100g = proteinPer100g; }
-
     public BigDecimal getFatsPer100g() { return fatsPer100g; }
     public void setFatsPer100g(BigDecimal fatsPer100g) { this.fatsPer100g = fatsPer100g; }
-
     public BigDecimal getCarbsPer100g() { return carbsPer100g; }
     public void setCarbsPer100g(BigDecimal carbsPer100g) { this.carbsPer100g = carbsPer100g; }
-
     public int getPortionSizeGrams() { return portionSizeGrams; }
     public void setPortionSizeGrams(int portionSizeGrams) { this.portionSizeGrams = portionSizeGrams; }
-
     public int getCalories() { return calories; }
     public void setCalories(int calories) { this.calories = calories; }
-
     public BigDecimal getProteinG() { return proteinG; }
     public void setProteinG(BigDecimal proteinG) { this.proteinG = proteinG; }
-
     public BigDecimal getFatsG() { return fatsG; }
     public void setFatsG(BigDecimal fatsG) { this.fatsG = fatsG; }
-
     public BigDecimal getCarbsG() { return carbsG; }
     public void setCarbsG(BigDecimal carbsG) { this.carbsG = carbsG; }
 }

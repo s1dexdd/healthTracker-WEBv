@@ -39,46 +39,26 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) {
-        if (userDAO.getUserByEmail(user.getEmail()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-        int id = userDAO.insertUser(user);
-        user.setUserId(id);
+        int userId = userDAO.insertUser(user);
+        user.setUserId(userId);
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/update-profile")
-    public ResponseEntity<Void> updateProfile(@RequestBody User user) {
-        boolean updated = userDAO.updateUserAllSettings(
-            user.getUserId(),
-            user.getName(),
-            user.getHeightCm(),
-            user.getStartWeightKg(),
-            user.getTargetWeightKg(),
-            user.getAge(),
-            user.getGender(),
-            user.getActivityLevel(),
-            user.getWeeklyGoalKg()
-        );
-        return updated ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/{id}/calculate-goal")
-    public GoalResult calculateGoal(@PathVariable int id, @RequestParam BigDecimal weeklyRate) {
-        return goalService.calculateTargetIntakeByWeeklyRate(id, weeklyRate);
+    @GetMapping("/{userId}/calculate-goal")
+    public GoalResult calculateGoal(@PathVariable int userId, @RequestParam BigDecimal weeklyRate) {
+        return goalService.calculateTargetIntakeByWeeklyRate(userId, weeklyRate);
     }
 
     @PostMapping("/food")
-    public void addFood(@RequestBody FoodLog food) {
-    if (food.getLogDate() == null) {
-        food.setLogDate(new java.sql.Timestamp(System.currentTimeMillis()));
-    }
-    foodLogDAO.insertFoodLog(food);
+    public void addFood(@RequestBody FoodLog foodLog) {
+        foodLogDAO.insertFoodLog(foodLog);
     }
 
     @PostMapping("/workout")
     public void addWorkout(@RequestBody WorkoutLog workout) {
-        workout.setLogDate(new java.sql.Timestamp(System.currentTimeMillis()));
+        if (workout.getLogDate() == null) {
+            workout.setLogDate(new java.sql.Timestamp(System.currentTimeMillis()));
+        }
         workoutLogDAO.insertWorkoutLog(workout);
     }
 
@@ -93,25 +73,49 @@ public class UserController {
     }
 
     @PostMapping("/weight")
-public void addWeight(@RequestBody WeightLog weightLog) {
-    if (weightLog.getLogDate() == null) {
-        weightLog.setLogDate(new java.sql.Date(System.currentTimeMillis()));
+    public void addWeight(@RequestBody WeightLog weightLog) {
+        if (weightLog.getLogDate() == null) {
+            weightLog.setLogDate(new java.sql.Date(System.currentTimeMillis()));
+        }
+        weightLogDAO.insertWeightLog(weightLog);
     }
-    weightLogDAO.insertWeightLog(weightLog);
-}
 
     @DeleteMapping("/food/{logId}")
     public ResponseEntity<Void> deleteFood(@PathVariable int logId) {
         boolean deleted = foodLogDAO.deleteFoodLog(logId);
         return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
+
     @GetMapping("/weight-logs")
-public List<WeightLog> getWeightLogs(@RequestParam int userId) {
-    return weightLogDAO.getWeightLogsByUserId(userId);
-}
-@DeleteMapping("/workout/{logId}")
-public ResponseEntity<Void> deleteWorkout(@PathVariable int logId) {
-    boolean deleted = workoutLogDAO.deleteWorkoutLog(logId);
-    return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    public List<WeightLog> getWeightLogs(@RequestParam int userId) {
+        return weightLogDAO.getWeightLogsByUserId(userId);
+    }
+
+    @DeleteMapping("/workout/{logId}")
+    public ResponseEntity<Void> deleteWorkout(@PathVariable int logId) {
+        try {
+            workoutLogDAO.deleteWorkoutLog(logId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @PostMapping("/update-profile")
+public ResponseEntity<Void> updateProfile(@RequestBody User user) {
+    System.out.println("Получен запрос на обновление профиля для ID: " + user.getUserId());
+    
+    boolean updated = userDAO.updateUserAllSettings(
+        user.getUserId(),
+        user.getName(),
+        user.getHeightCm(),
+        user.getStartWeightKg(),
+        user.getTargetWeightKg(),
+        user.getAge(),
+        user.getGender(),
+        user.getActivityLevel(),
+        user.getWeeklyGoalKg()
+    );
+
+    return updated ? ResponseEntity.ok().build() : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 }
 }

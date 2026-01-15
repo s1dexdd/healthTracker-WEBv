@@ -171,13 +171,13 @@ export class AppComponent implements OnInit {
 
   loadDashboard() {
     if (!this.user?.userId) return;
-    const userId = this.user.userId; // Сохраняем в константу для уверенности TS
+    const userId = this.user.userId; 
     const rate = this.setupForm.value.weeklyGoalKg || 0;
     
     this.userService.getGoalCalculation(userId, rate).subscribe(res => {
       this.goal = res;
       
-      // Используем userId без знака вопроса, так как мы выше проверили его наличие
+      
       this.userService.getWeightLogs(userId).subscribe((logs: any[]) => {
         if (logs && logs.length > 0) {
           const sortedLogs = logs.sort((a: any, b: any) => 

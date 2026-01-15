@@ -20,30 +20,40 @@ public class UserDAO {
             "UPDATE \"USER\" SET name = ?, height_cm = ?, start_weight_kg = ?, target_weight_kg = ?, age = ?, gender = ?, activity_level = ?, weekly_goal_kg = ? WHERE user_id = ?";
 
     public int insertUser(User user) {
-        try (Connection connection = DBConfig.getConnection();
-             PreparedStatement ps = connection.prepareStatement(INSERT_USERS_SQL, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, user.getName());
-            ps.setString(2, user.getEmail());
-            ps.setString(3, user.getPassword());
-            ps.setInt(4, user.getHeightCm());
-            ps.setBigDecimal(5, user.getStartWeightKg());
-            ps.setBigDecimal(6, user.getTargetWeightKg());
-            ps.setInt(7, user.getAge());
-            ps.setString(8, user.getGender().name());
-            ps.setString(9, user.getActivityLevel().name());
-            ps.setBigDecimal(10, user.getWeeklyGoalKg());
-
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return -1;
+    
+    if (user.getTargetWeightKg() == null || user.getStartWeightKg() == null) {
+        throw new IllegalArgumentException("Вес (начальный и целевой) должен быть указан");
     }
+    if (user.getHeightCm() <= 0 || user.getAge() <= 0) {
+        throw new IllegalArgumentException("Рост и возраст должны быть положительными числами");
+    }
+
+    try (Connection connection = DBConfig.getConnection();
+         PreparedStatement ps = connection.prepareStatement(INSERT_USERS_SQL, Statement.RETURN_GENERATED_KEYS)) {
+        ps.setString(1, user.getName());
+        ps.setString(2, user.getEmail());
+        ps.setString(3, user.getPassword());
+        ps.setInt(4, user.getHeightCm());
+        ps.setBigDecimal(5, user.getStartWeightKg());
+        ps.setBigDecimal(6, user.getTargetWeightKg());
+        ps.setInt(7, user.getAge());
+        ps.setString(8, user.getGender().name());
+        ps.setString(9, user.getActivityLevel().name());
+        ps.setBigDecimal(10, user.getWeeklyGoalKg());
+
+        ps.executeUpdate();
+        
+        
+        try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                return generatedKeys.getInt(1);
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return -1;
+}
 
     public User getUserByEmail(String email) {
         try (Connection connection = DBConfig.getConnection();

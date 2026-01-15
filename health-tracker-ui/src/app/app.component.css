@@ -18,7 +18,7 @@
   min-height: 100vh;
 }
 
-/* ШАПКА */
+
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -38,7 +38,7 @@
   color: var(--text-main);
 }
 
-/* ГЛАВНАЯ КАРТОЧКА */
+
 .main-stats-card {
   background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
   color: white !important;
@@ -104,7 +104,7 @@
   opacity: 0.7;
 }
 
-/* БЛОК ЗАПИСИ ВЕСА НА ГЛАВНОЙ */
+
 .weight-log-card {
   background: white !important;
   border-radius: 24px !important;
@@ -166,7 +166,7 @@
   font-size: 0.9rem;
 }
 
-/* МАКРОНУТРИЕНТЫ */
+
 .macro-card {
   background: white !important;
   border-radius: 30px !important;
