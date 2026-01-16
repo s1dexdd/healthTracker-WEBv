@@ -140,7 +140,7 @@
             <div *ngFor="let f of dailyFoodLogs" class="history-item">
               <div class="item-info">
                 <span class="item-title">{{ f.description }}</span>
-                <span class="item-sub">{{ f.portionSizeGrams }}г • Б:{{f.protein || 0}} Ж:{{f.fats || 0}} У:{{f.carbs || 0}}</span>
+                <span class="item-sub">:{{ f.portionSizeGrams }}г • Б:{{f.proteinG }} Ж:{{f.fatsG }} У:{{f.carbsG }}</span>
               </div>
               <div class="item-right">
                 <span class="kcal-add">+{{ f.calories | number:'1.0-0' }}</span>

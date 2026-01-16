@@ -10,4 +10,7 @@ export interface FoodLog {
   fatsPer100g: number;
   carbsPer100g: number;
   calories?: number;
+  proteinG?: number; 
+  fatsG?: number;    
+  carbsG?: number;
 }
